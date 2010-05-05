@@ -1,0 +1,181 @@
+/* Reset Styles - START */
+
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outline:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+/* Reset Styles - END */
+
+/* Text Styles - START */
+
+body{	font: 13px/1.5 "Trebuchet MS", verdana, arial, sans-serif;background-color: #8dbdd4;}
+caption {font-family: "Trebuchet MS", verdana, arial, sans-serif;}
+a:focus{outline:1px dotted #000}
+hr{border:0 #ccc solid;border-top-width:1px;clear:both;height:0}
+h1,h2,h3{font-weight: bold}
+h1 {font-size: 150%;color: #4b708d;}
+h2 {font-size: 150%}
+h3,h4,h5,h6 {font-size: 100%}
+ol{list-style:decimal}
+ul{list-style:square}
+li{margin-left:30px}
+p,dl,hr,h1,h2,h3,h4,h5,h6,ol,ul,pre,table,address,fieldset{margin-bottom: 0.5em;}
+
+/* Text Styles - END */
+
+/* Main Styles - START */
+
+#wrapper {text-align: center;}
+
+#content-wrap {
+	position: relative;
+	text-align: left;
+	overflow: auto;
+	background: #fff;
+	border: solid #fff;
+	border-width: 0 4px 4px;
+	margin-bottom: 1.0em;
+}
+
+#header {	
+	text-align: left;
+	background: #4b708d;
+ 	border:4px solid #fff;
+}
+#header h1 {
+	height: 50px;
+	margin: 10px 0 0 10px;
+	font-size: 36px;
+	color: #c90;}
+#header h1 span {color: #fff}
+
+#header h2 {
+	margin: 0 0 10px 10px;
+	color: #ededed;
+	font-size: 18px;
+}
+
+fieldset {border: none;padding: 5px;}
+
+label {display: block;margin-top: 5px;font-weight: bold;color: #333}
+		
+input,select { 
+	width: 300px;
+	padding: 2px;
+	margin: 0;
+	border: 1px solid #ccc;
+	font: normal 1em "Trebuchet MS", Tahoma, sans-serif;
+	color:#777;
+}
+
+input.submit{width: 150px;}
+	
+legend span { 
+	display: block;
+	height: 32px;
+	padding:10px 10px 10px 35px;
+	color: #888;
+	font-weight: bold;
+	font-size: 1.6em;
+}
+
+button,a.button {
+	display: block; 
+	cursor: pointer; 
+	background-color: #4b708d; 
+	color: #fff; 
+	font-weight: bold;
+	margin-bottom: 10px;
+	padding:6px 10px 7px 7px;
+	border: 1px solid #fff;}
+a.button{background-color: #C60;text-decoration: none;}	
+button span.next {color: #fc0;}
+
+button#selectSite {
+	float: right;
+	background-color:maroon;
+	margin-left: 10px;
+}
+button#selectDateRange {
+	width: 200px;
+}
+.errorMessage,.successMessage {
+	border: 1px solid;
+	margin: 10px 0px;
+	padding:10px 10px 10px 50px;
+	background-repeat: no-repeat;
+	background-position: 10px center;
+}
+
+.errorMessage {
+	color: #D8000C;
+	background-color: #ffbaba;
+	background-image: url('images/error.gif');
+}
+
+.successMessage {
+	color:#4f8a10;
+	background-color: #dff2bf; 
+	background-image: url('images/success.gif');
+}
+
+table.dataTable{
+	border-bottom:none; 
+	margin:0 auto 15px;
+	font:10px Verdana,Arial;
+	}
+table.dataTable tbody {text-align: left;}
+table.dataTable	th {
+	text-align:left;  
+	color: #4b708d;
+	}
+table.dataTable th h3{padding:6px 8px 8px}
+table.dataTable td h4{color:#CC6600;}
+table.dataTable td {
+	text-align:left;
+	padding:4px; 
+	}
+table.dataTable td.align-right {
+	text-align:right;
+	}
+		
+caption {
+	font-size: 1.25em;
+	text-align: left;
+	border-bottom: solid 1px;
+}
+table.dataTable.listTable {
+	border: solid #000;
+	border-width: 0 1px 0 1px;
+}
+table.dataTable.listTable tr.headerRow th{
+	background: #ededed;
+	border-bottom: 1px solid #000;
+	padding: 0.25em;
+}
+table.dataTable.listTable th {
+	color: #000;
+	font-size: 1.25em;
+}
+table.dataTable.listTable th,table.dataTable.listTable td {
+	border: solid #000;
+	border-width: 0 1px 1px 0;
+}
+
+tr th,tr td {background:#fff;}
+tr.oddrow th,tr.oddrow td {background:#ecf2f6}
+
+#logout {margin: 1.0em 0;}
+#logout a {
+	position: absolute;
+	top:10px;
+	right:10px;
+	color:#fff;
+	font-weight: bold;
+	text-decoration: none;
+	background: #d50000;
+	padding: 5px;
+	display:block;
+	width: 50px;
+	text-align: center;}
+#logout a:hover,#logout span a:focus {color:#333;}
+
+/* Main Styles - END */
