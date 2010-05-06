@@ -62,12 +62,20 @@
             <cfhttpparam name="Authorization" type="header" value="#authTokenHeader#">
         </cfhttp>
         
-        <cfset responseOutput = cfhttp.filecontent />      
-        <!---remove dxp: prefix from nodes that have it and strip xmlns from feed element --->
-         <cfset responseOutput = responseOutput.ReplaceAll("(</?)(\w+:)","$1") />
-         <cfset responseOutput = REReplaceNoCase(responseOutput,"<feed[^>]*>","<feed>") />
-         <!---entry nodes hold the data--->
-         <cfset entryNodes = XmlSearch(responseOutput, '//entry/') />
+        <cfset responseOutput = cfhttp.filecontent /> 
+        
+          <cftry>   
+         	<!---remove dxp: prefix from nodes that have it and strip xmlns from feed element --->
+         	<cfset responseOutput = responseOutput.ReplaceAll("(</?)(\w+:)","$1") />
+         	<cfset responseOutput = REReplaceNoCase(responseOutput,"<feed[^>]*>","<feed>") />
+         	<!---entry nodes hold the data--->
+         	<cfset entryNodes = XmlSearch(responseOutput, '//entry/') />
+         <cfcatch>
+         	<!--- dump out response on error - most likely in feed url --->
+         	<cfdump var="#responseOutput#">
+         	<cfabort>
+         </cfcatch>
+         </cftry>
          
          <cfreturn entryNodes />
     </cffunction>
