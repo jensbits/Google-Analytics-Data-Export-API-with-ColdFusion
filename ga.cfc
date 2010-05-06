@@ -63,7 +63,7 @@
         </cfhttp>
         
         <cfset responseOutput = cfhttp.filecontent />      
-        <!---remove dxp: prefix from nodes that have it and strip xmlns from feed element--->
+        <!---remove dxp: prefix from nodes that have it and strip xmlns from feed element --->
          <cfset responseOutput = responseOutput.ReplaceAll("(</?)(\w+:)","$1") />
          <cfset responseOutput = REReplaceNoCase(responseOutput,"<feed[^>]*>","<feed>") />
          <!---entry nodes hold the data--->
