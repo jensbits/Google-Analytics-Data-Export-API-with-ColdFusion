@@ -48,13 +48,15 @@
     <cffunction name="callApi" access="public" returntype="array" hint="GA data as array of structures">
         <cfargument name="gaUrl" type="string" required="yes">
         <cfargument name="authToken" type="string" required="no" default="#session.ga_loginAuth#" />
-            
-        <cfif isDefined("session.authSubLogin") AND session.authSubLogin>
-        	<cfset var authTokenHeader = 'AuthSub token="' & arguments.authToken & '"' />
-        <cfelse>
-			<cfset var authTokenHeader = 'GoogleLogin auth=' & arguments.authToken />
-        </cfif>
+        
+        <cfset var authTokenHeader = "" /> 
         <cfset var responseOutput = "" />
+           
+        <cfif isDefined("session.authSubLogin") AND session.authSubLogin>
+        	<cfset authTokenHeader = 'AuthSub token="' & arguments.authToken & '"' />
+        <cfelse>
+			<cfset authTokenHeader = 'GoogleLogin auth=' & arguments.authToken />
+        </cfif>
            
         <cfhttp url="#arguments.gaUrl#" method="get">
             <cfhttpparam name="Authorization" type="header" value="#authTokenHeader#">
