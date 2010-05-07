@@ -15,14 +15,17 @@
 <!---feed URLs - set dimensions and metrics for data returned here--->			
         	<cfset statsUrl = "https://www.google.com/analytics/feeds/data?ids=" & session.tableId & "&metrics=ga:newVisits,ga:pageviews,ga:visits,ga:visitors,ga:timeOnSite&start-date=" & session.startdate & "&end-date=" & session.enddate />
 
-              <cfset visitorLoyaltyUrl = "https://www.google.com/analytics/feeds/data?ids=" & session.tableId & "&dimensions=ga:daysSinceLastVisit&metrics=ga:newVisits&filters=ga:daysSinceLastVisit%3D%3D0&start-date=" & session.startdate & "&end-date=" & session.enddate />
+              <cfset visitorLoyaltyUrl = "https://www.google.com/analytics/feeds/data?ids=" & session.tableId & "&dimensions=ga:daysSinceLastVisit&metrics=ga:newVisits&filters=ga:daysSinceLastVisit==0&start-date=" & session.startdate & "&end-date=" & session.enddate />
               
               <cfset visitsChartUrl = "https://www.google.com/analytics/feeds/data?ids=" & session.tableId & "&dimensions=ga:month,ga:year&metrics=ga:visits&sort=ga:year&start-date=" & session.startdate & "&end-date=" & session.enddate />
               
              <cfset countryChartUrl = "https://www.google.com/analytics/feeds/data?ids=" & session.tableId & "&dimensions=ga:country&metrics=ga:visits&sort=-ga:visits&start-date=" & session.startdate & "&end-date=" & session.enddate & "&max-results=5" />
              
               <cfset topPagesUrl = "https://www.google.com/analytics/feeds/data?ids=" & session.tableId & "&dimensions=ga:pageTitle&metrics=ga:pageviews&filters=ga:pageTitle!~Page%20Not%20Found&sort=-ga:pageviews&start-date=" & session.startdate & "&end-date=" & session.enddate & "&max-results=25" />
-                    	
+              
+              <cfset topReferralsUrl = "https://www.google.com/analytics/feeds/data?ids=" & session.tableId & "&dimensions=ga:source&metrics=ga:visits&filters=ga:medium==referral&sort=-ga:visits&start-date=" & session.startdate & "&end-date=" & session.enddate & "&max-results=25" />
+              
+                                  	
         <!---check for session.statsDataArray to avoid calling/processing GA on page refresh. Info is day old anyway.--->	
         <cfif NOT isDefined("session.getNewData")>	
         
@@ -46,6 +49,10 @@
             <cfinvoke component="ga" method="parseData" returnvariable="topPagesArray">
                 <cfinvokeargument name="gaUrl" value="#topPagesUrl#" />
             </cfinvoke>
+            
+            <cfinvoke component="ga" method="parseData" returnvariable="topReferralsArray">
+                <cfinvokeargument name="gaUrl" value="#topReferralsUrl#" />
+            </cfinvoke>
         
         	<!---set getNewData session var and session vars with data to prevent running calls to GA on page refresh--->
             <cflock scope="session" type="exclusive" timeout="5">
@@ -56,6 +63,7 @@
 				<cfset session.visitsChartArray = visitsChartArray />
                 <cfset session.countryChartArray = countryChartArray />
                 <cfset session.topPagesArray = topPagesArray />
+                <cfset session.topReferralsArray = topReferralsArray />
 
 			</cflock>
 
@@ -167,19 +175,6 @@ $(function(){
 		}
 	});
 });
-</script>
-<script type="text/javascript">
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-4945154-2']);
-  _gaq.push(['_setDomainName', 'none']);
-  _gaq.push(['_setAllowLinker', true]);
-  _gaq.push(['_trackPageview']);
-
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
-  })();
 </script>
 </head>
 <body>
@@ -356,7 +351,7 @@ $(function(){
             <caption><h2>Top Pages Summary</h2></caption>
 
             <tr class="headerRow">
-            	<th>&nbsp;</th>
+            	<th width="5%">&nbsp;</th>
                 <th>Title</th>
                 <th width="10%">Pageviews</th>
             </tr>
@@ -366,6 +361,27 @@ $(function(){
            		<td>#num#</td>
                 <td>#session.topPagesArray[num].pageTitle#</td>
                 <td class="align-right">#NumberFormat(session.topPagesArray[num].pageviews,",")#</td>
+            </tr>
+            </cfloop>
+
+            </table>
+           </div>
+           
+           <div class="grid_14 prefix_1 suffix_1" style="margin-top: 1em;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" class="dataTable listTable">
+            <caption><h2>Top Referrals Summary</h2></caption>
+
+            <tr class="headerRow">
+            	<th width="5%">&nbsp;</th>
+                <th>Referrer</th>
+                <th width="10%">Visits</th>
+            </tr>
+            
+            <cfloop from="1" to="#ArrayLen(session.topReferralsArray)#" index="num">
+            <tr <cfif num MOD 2> class="oddrow"</cfif>>
+           		<td>#num#</td>
+                <td>#session.topReferralsArray[num].source#</td>
+                <td class="align-right">#NumberFormat(session.topReferralsArray[num].visits,",")#</td>
             </tr>
             </cfloop>
 

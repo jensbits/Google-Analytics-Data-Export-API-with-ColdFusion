@@ -1,0 +1,13 @@
+Requirements:
+ColdFusion 8.0.1 or greater
+
+Uses 960 grid system CSS, jQuery, jQuery UI. All included.
+
+Put all files in folder on your server and run from http://YOUR_SITE.COM/your_folder/index.cfm
+
+Features:
+Allows for log in to Google Analytics via ClientLogin or AuthSub.
+Returns list of profiles (sites) if more than one associated with log in.
+After site selection (or immediately if only one profile available), queries Google Analytics Data Export API.
+Returns visitor data, top pages data, and top referrers data as tables or graphs.
+

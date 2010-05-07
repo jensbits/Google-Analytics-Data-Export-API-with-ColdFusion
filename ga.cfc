@@ -48,24 +48,34 @@
     <cffunction name="callApi" access="public" returntype="array" hint="GA data as array of structures">
         <cfargument name="gaUrl" type="string" required="yes">
         <cfargument name="authToken" type="string" required="no" default="#session.ga_loginAuth#" />
-            
-        <cfif isDefined("session.authSubLogin") AND session.authSubLogin>
-        	<cfset var authTokenHeader = 'AuthSub token="' & arguments.authToken & '"' />
-        <cfelse>
-			<cfset var authTokenHeader = 'GoogleLogin auth=' & arguments.authToken />
-        </cfif>
+        
+        <cfset var authTokenHeader = "" /> 
         <cfset var responseOutput = "" />
+           
+        <cfif isDefined("session.authSubLogin") AND session.authSubLogin>
+        	<cfset authTokenHeader = 'AuthSub token="' & arguments.authToken & '"' />
+        <cfelse>
+			<cfset authTokenHeader = 'GoogleLogin auth=' & arguments.authToken />
+        </cfif>
            
         <cfhttp url="#arguments.gaUrl#" method="get">
             <cfhttpparam name="Authorization" type="header" value="#authTokenHeader#">
         </cfhttp>
         
-        <cfset responseOutput = cfhttp.filecontent />      
-        <!---remove dxp: prefix from nodes that have it and strip xmlns from feed element--->
-         <cfset responseOutput = responseOutput.ReplaceAll("(</?)(\w+:)","$1") />
-         <cfset responseOutput = REReplaceNoCase(responseOutput,"<feed[^>]*>","<feed>") />
-         <!---entry nodes hold the data--->
-         <cfset entryNodes = XmlSearch(responseOutput, '//entry/') />
+        <cfset responseOutput = cfhttp.filecontent /> 
+        
+          <cftry>   
+         	<!---remove dxp: prefix from nodes that have it and strip xmlns from feed element --->
+         	<cfset responseOutput = responseOutput.ReplaceAll("(</?)(\w+:)","$1") />
+         	<cfset responseOutput = REReplaceNoCase(responseOutput,"<feed[^>]*>","<feed>") />
+         	<!---entry nodes hold the data--->
+         	<cfset entryNodes = XmlSearch(responseOutput, '//entry/') />
+         <cfcatch>
+         	<!--- dump out response on error - most likely in feed url --->
+         	<cfdump var="#responseOutput#">
+         	<cfabort>
+         </cfcatch>
+         </cftry>
          
          <cfreturn entryNodes />
     </cffunction>
