@@ -101,11 +101,13 @@
         <cfreturn profileArray />        
     </cffunction>
   
-    <cffunction name="parseData" access="public" returntype="array" hint="GA data as array of structures">
-        <cfargument name="gaUrl" type="string" required="yes">
+    <cffunction name="parseData" access="public" hint="GA data as array of structures set in session">
+        <cfargument name="gaUrl" type="string" required="yes" />
+        <cfargument name="arrayName" type="string"required="yes" />
         <cfargument name="authToken" type="string" required="no" default="#session.ga_loginAuth#" />
         
-        <cfset var returnArray = ArrayNew(1) />
+        
+        <cfset var dataArray = ArrayNew(1) />
         <cfset var entryStruct = StructNew() />
                   
          <cfset entryNodes = callApi(arguments.gaUrl) />
@@ -123,8 +125,12 @@
                  		<cfset "entryStruct.#Mid(metric.XmlAttributes["name"],4,Len(metric.XmlAttributes["name"]))#" = metric.XmlAttributes["value"] />
                   </cfloop>
 
-                <cfset arrayAppend(returnArray,duplicate(entryStruct)) />       
+                <cfset arrayAppend(dataArray,duplicate(entryStruct)) />       
            </cfloop>
-        <cfreturn returnArray />
+       
+        	<cflock scope="session" type="exclusive" timeout="5">
+        		<cfset "session.#arrayName#" = dataArray />
+        	</cflock>
+       
     </cffunction>       
 </cfcomponent>
