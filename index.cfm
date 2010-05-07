@@ -2,10 +2,10 @@
 	<cflocation url="login.cfm" addtoken="no" />
 </cfif>
 
-<!---dates for one full year of stats (default)--->
+<!---dates for last 6 months of stats (default)--->
 <cfif (NOT isDefined("session.startdate")) AND (NOT isDefined("session.enddate"))>
     <cflock scope="session" type="exclusive" timeout="5">
-        <cfset session.startdate = DateFormat(DateAdd("d",-365,CreateDate(Year(Now()),Month(Now()),Day(Now()))), "yyyy-mm-dd") />
+        <cfset session.startdate = DateFormat(DateAdd("m",-6,CreateDate(Year(Now()),Month(Now()),Day(Now()))), "yyyy-mm-dd") />
         <cfset session.enddate = DateFormat(DateAdd("d", -1, Now()),"yyyy-mm-dd") />
     </cflock>
 </cfif>
