@@ -2,9 +2,9 @@
 <cfif isDefined("URL.code") AND URL.code NEQ "access_denied">
 	<cfinvoke component="ga" method="googleOauth2Login">
         <cfinvokeargument name="code" value="#URL.code#" />
-        <cfinvokeargument name="client_id" value="1042549107899.apps.googleusercontent.com" />
-        <cfinvokeargument name="client_secret" value="dnCU7Pn3MKSA0xCoz0Ua03z7" />
-        <cfinvokeargument name="redirect_uri" value="http://www.popcenter.org/ga/login.cfm" />
+        <cfinvokeargument name="client_id" value="YOUR_CLIENT ID" />
+        <cfinvokeargument name="client_secret" value="YOUR_SECRET" />
+        <cfinvokeargument name="redirect_uri" value="YOUR_REDIRECT_URL" />
         <cfinvokeargument name="state" value="#URL.state#" />
     </cfinvoke>
 </cfif>
@@ -107,7 +107,7 @@ checking for session loginAuth prevents re-authentication on page refresh
             <br /><br />
             <button type="submit" id="submitLogin">Submit</button>
         </form>--->
-        <p><a href=" https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/analytics.readonly&redirect_uri=http://www.jensbits.com/demos/analytics_oauth2/index.php&response_type=code&client_id=1083852050270.apps.googleusercontent.com&access_type=online">Login with Google account that has access to CPOP analytics<br /></a></p>
+        <p><a href=" https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/analytics.readonly&redirect_uri=YOUR_REDIRECT_URL&response_type=code&client_id=YOUR_CLIENT_ID&access_type=online">Login with Google account that has access to CPOP analytics<br /></a></p>
         </div>
     </div> 
   </cfif> 
