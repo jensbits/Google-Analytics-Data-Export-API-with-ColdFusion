@@ -11,11 +11,17 @@
 <cfelse>
 
 	 <cflock scope="session" type="exclusive" timeout="5">
-        <cfset session.startdate = form.startdate />
-        <cfset session.enddate = form.enddate />
+        <cfset session.startdate = DateFormat(start_date, "yyyy-mm-dd") />
+        <cfset session.enddate = DateFormat(end_date,"yyyy-mm-dd") />
         
-        <cfset StructDelete(session,"getNewData") />
-     </cflock>
+        <cfset StructDelete(session,"visitsSnapshotArray") />
+        <cfset StructDelete(session,"visitorLoyaltyArray") />
+        <cfset StructDelete(session,"visitsChartArray") />
+        <cfset StructDelete(session,"countryChartArray") />
+        <cfset StructDelete(session,"topPagesArray") />
+        <cfset StructDelete(session,"pdfDownloadsArray") />
+        <cfset StructDelete(session,"pdfDownloadsTotalsArray") />
+    </cflock>
 
 </cfif>
 <cfoutput>#serializeJSON(errormsg)#</cfoutput>

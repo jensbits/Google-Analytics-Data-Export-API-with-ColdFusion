@@ -1,7 +1,7 @@
 <cfcomponent output="false">
 
 <!--- Application settings --->
-<cfset this.name = "GAwebstats" />
+<cfset this.name = "webstats" />
 <cfset this.sessionManagement = true />
 <cfset this.sessionTimeout = createTimeSpan(0,2,30,0) />
 <cfset THIS.SetClientCookies = false />
