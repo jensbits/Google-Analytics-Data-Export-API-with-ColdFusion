@@ -32,9 +32,9 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Web Stats</title>
-<link rel="stylesheet" href="//jensbits.com/demos/bootstrap/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css" />
 <style>body {padding-top: 60px;}.float_right{float:right}</style>
-<link rel="stylesheet" href="//jensbits.com/demos/bootstrap/css/bootstrap-responsive.min.css" />
+<link rel="stylesheet" href="/bootstrap/css/bootstrap-responsive.min.css" />
 </head>
 <body>
 <div class="navbar navbar-fixed-top">

@@ -73,9 +73,9 @@
 </cfoutput>
 <title><cfoutput>#session.site#</cfoutput> Web Stats</title>
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1/themes/blitzer/jquery-ui.css" />
-<link rel="stylesheet" href="//jensbits.com/demos/bootstrap/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css" />
 <style>body {padding-top: 60px;}.float_right{float:right}</style>
-<link rel="stylesheet" href="//jensbits.com/demos/bootstrap/css/bootstrap-responsive.min.css" />
+<link rel="stylesheet" href="/bootstrap/css/bootstrap-responsive.min.css" />
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
