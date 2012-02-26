@@ -1,115 +1,91 @@
-
+<cfif (isDefined("URL.logout") and URL.logout EQ "true") OR (isDefined("session.ga_accessTokenExpiry") AND DateCompare(session.ga_accessTokenExpiry,Now()) LT 0)>
+	<cfinvoke component="ga" method="logout" />
+</cfif>
+<!--- get access token if code returned and access token not issued --->
 <cfif isDefined("URL.code") AND URL.code NEQ "access_denied">
 	<cfinvoke component="ga" method="googleOauth2Login">
         <cfinvokeargument name="code" value="#URL.code#" />
-        <cfinvokeargument name="client_id" value="YOUR_CLIENT ID" />
-        <cfinvokeargument name="client_secret" value="YOUR_SECRET" />
-        <cfinvokeargument name="redirect_uri" value="YOUR_REDIRECT_URL" />
-        <cfinvokeargument name="state" value="#URL.state#" />
     </cfinvoke>
 </cfif>
 
-<!---not used as client login is security risk
-checking for session loginAuth prevents re-authentication on page refresh
-<cfif isDefined("form.Email") AND ((NOT isDefined("session.ga_loginAuth")) OR session.ga_loginAuth EQ "Authorization Failed")>
- 	<cfinvoke component="ga" method="googleLogin" returnvariable="loginAuth">
-        <cfinvokeargument name="email" value="#form.Email#" />
-        <cfinvokeargument name="password" value="#form.password#" />
-    </cfinvoke>
-</cfif>--->
-
-<cfif isDefined("session.ga_loginAuth") AND session.ga_loginAuth NEQ "Authorization Failed">
-	<cfinvoke component="ga" method="parseProfiles" returnvariable="profilesArray">
-    	<cfinvokeargument name="authToken" value="#session.ga_loginAuth#" />
-    </cfinvoke>
-    
+<!---if they picked a pofile from DD, send to stats page --->
+<cfif isDefined("form.profileId")>
     <cflock scope="session" type="exclusive" timeout="5">
-		<cfset session.profilesArray = profilesArray />
-	</cflock>
-    
+		<cfset session.profileId = ListGetAt(form.profileId, 1) />
+        <cfset session.site = ListGetAt(form.profileId, 2) />
+    </cflock>
+	<cflocation url="index.cfm" addtoken="no"/>
 </cfif>
+
+<!--- get profiles assoc with account --->
+<cfif isDefined("session.ga_accessToken") AND session.ga_accessToken DOES NOT CONTAIN "Authorization Failed">
+	<cfinvoke component="ga" method="parseProfiles" />  
+</cfif>
+
+<!--- create login url --->
+<cfset loginURL = "https://accounts.google.com/o/oauth2/auth?scope=" & request.oauthSettings["scope"] 
+                   & "&redirect_uri=" & request.oauthSettings["redirect_uri"]
+                   & "&response_type=code&client_id=" & request.oauthSettings["client_id"]
+                   & "&access_type=online" />
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Web Stats</title>
-
-<link rel="stylesheet" type="text/css" href="css/reset.css" media="screen" />
-<link rel="stylesheet" type="text/css" href="css/960.css" media="screen" />
-<link rel="stylesheet" type="text/css" href="css/text.css" media="screen" />
-<link rel="stylesheet" type="text/css" href="css/style.css" media="screen" />
+<link rel="stylesheet" href="//jensbits.com/demos/bootstrap/css/bootstrap.min.css" />
+<style>body {padding-top: 60px;}.float_right{float:right}</style>
+<link rel="stylesheet" href="//jensbits.com/demos/bootstrap/css/bootstrap-responsive.min.css" />
 </head>
 <body>
-<div id="wrapper">
-	
-	<div id="header" class="container_16">
-		<h1><span>Web</span> Stats</h1>
-	</div>
-    
-<div id="content-wrap" class="container_16">
-   
-    <div class="grid_8 prefix_4 suffix_4"> 
-    <cfif isDefined("URL.code") AND URL.code EQ "access_denied">
-		<div class='errorMessage'>Google authorization failed.</div>
-	</cfif>
-    
-	<cfif isDefined("session.ga_loginAuth") AND session.ga_loginAuth CONTAINS "Authorization Failed">
-		<div class='errorMessage'>Google authorization failed. Your email and/or password was entered incorrectly or the Google account you are using does not have access to the analytics data. <cfoutput>ERROR: #session.ga_loginAuth#</cfoutput></div>
-	</cfif>
-    <cfif ArrayLen(session.profilesArray) GT 1>
-		<div id="logout"><a href="login.cfm?logout=true">Logout</a></div>
-	</cfif>
- 
-    <!---if they picked a pofile from DD, send to stats page --->
-    <cfif isDefined("form.tableId")>
-        <cflock scope="session" type="exclusive" timeout="5">
-			<cfset session.tableId = Mid(form.tableId,1,Find("|",form.tableId)-1) />
-            <cfset session.site = Mid(form.tableId,Find("|",form.tableId)+1,Len(form.tableId)-Find("|",form.tableId)) />
-        </cflock>
-		<cflocation url="index.cfm" addtoken="no"/>
-	</cfif>
-
-    <!---if they only have 1 profile assoc w/ their login, send them to stats page --->
-     <cfif ArrayLen(session.profilesArray) EQ 1>
-     	<cflock scope="session" type="exclusive" timeout="5">
-			<cfset session.tableId = session.profilesArray[1].tableId />
-            <cfset session.site = session.profilesArray[1].title />
-		</cflock>
-		<cflocation url="index.cfm" addtoken="no"/>
-
-	<!--- else have them pick the profile they want stats for --->
-    <cfelseif ArrayLen(session.profilesArray) GT 1>
-        <div class="grid_8 prefix_4 suffix_4">
-          <div id="formWrap">
-         
-    		<form name="siteSelect" method="post" action="login.cfm">
-                <label for="tableId">Select Site</label>
-                <select name="tableId" id="tableId">
-                                <cfloop array="#session.profilesArray#" index="profile">
-                                    <option value="#profile.tableId#|#profile.title#">#profile.title#</option>
-                                </cfloop>
+<div class="navbar navbar-fixed-top">
+	<div class="navbar-inner">
+		<div class="container">
+        	<a class="btw btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
+          <a class="brand" href="index.cfm">Google Analytics API with ColdFusion</a>
+          <div class="nav-collapse">
+              <ul class="nav">
+                <li class="active"><a href="http://www.jensbits.com/">Home</a></li>
+              </ul>
+          </div>
+        </div>
+    </div>
+</div>
+<div class="container">   
+<div class="hero-unit">
+	<h1>Web Stats</h1>
+	<p>Google Analytics OAuth2 with ColdFusion and ColdFusion Charts</p>
+   	<!--- else have them pick the profile they want stats for --->
+    <cfif isDefined("session.profilesArray")>
+        <p class="float_right"><a class="btn btn-danger" href="index.cfm?logout=true">Logout</a></p>
+         <cfoutput>
+    		<form class="form-horizontal" name="siteSelect" method="post" action="login.cfm">
+    		 <div class="control-group">
+                <label class="control-label" for="profileId">Select Site</label>
+                <div class="controls">
+                <select name="profileId" id="profileId">
+                	<cfloop array="#session.profilesArray#" index="profile">
+                    	<option value="#profile.profileId#,#profile.title#">#profile.title#</option>
+                     </cfloop>
                 </select>
-    			<br /><br />
-         		<button type="submit" id="submitSite">Submit</button>
+                </div>
+              </div>
+              <div class="form-actions">
+         		<button class="btn btn-primary" type="submit" id="submitSite">Submit</button>
+         	  </div>
     		</form>
-    
-    	</div>
+    </cfoutput>
 	<!---else no profiles and they need to log in --->
 	<cfelse>
-        <div id="formWrap">
-<!---     No longer used for security reasons   
-		<form name="loginForm" action="login.cfm" method="post">
-            <label for="email">Email (gmail.com)</label>
-            <input id="email" type="text" name="Email" />
-            <label for="password">Password:</label>
-            <input type="password" name="password" id="password"/>
-            <br /><br />
-            <button type="submit" id="submitLogin">Submit</button>
-        </form>--->
-        <p><a href=" https://accounts.google.com/o/oauth2/auth?scope=https://www.googleapis.com/auth/analytics.readonly&redirect_uri=YOUR_REDIRECT_URL&response_type=code&client_id=YOUR_CLIENT_ID&access_type=online">Login with Google account that has access to CPOP analytics<br /></a></p>
-        </div>
-    </div> 
+         <cfif isDefined("URL.code") AND URL.code EQ "access_denied">
+		 	<p class='alert alert-error'>Google authorization failed.</p>
+        <cfelseif isDefined("session.ga_accessToken") AND session.ga_accessToken CONTAINS "Authorization Failed">
+			<div class='alert alert-error'><cfoutput><p><strong>#session.ga_accessToken#</strong></p></cfoutput><p>Google authorization failed.</p></div>
+		</cfif>
+        <p><a class="btn btn-primary" href="<cfoutput>#loginURL#</cfoutput>">Login with Google account that has access to analytics</a></p>
   </cfif> 
 </div>       
 </div>

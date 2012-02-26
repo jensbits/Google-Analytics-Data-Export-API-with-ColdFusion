@@ -1,304 +1,194 @@
 <!---dates for one full year of stats (default)--->
 <cfif (NOT isDefined("session.startdate")) AND (NOT isDefined("session.enddate"))>
     <cflock scope="session" type="exclusive" timeout="5">
-        <cfset session.startdate = DateFormat(DateAdd("d",-365,CreateDate(Year(Now()),Month(Now()),Day(Now()))), "yyyy-mm-dd") />
+        <cfset session.startdate = DateFormat(DateAdd("d",-365,Now()), "yyyy-mm-dd") />
         <cfset session.enddate = DateFormat(DateAdd("d", -1, Now()),"yyyy-mm-dd") />
     </cflock>
 </cfif>
 
 <cfset daysInRange = DateDiff("d",session.startdate,session.enddate) + 1 />
 
-<cfif isDefined("URL.logout") and URL.logout EQ "true">
-    
-    <cflock scope="session" type="exclusive" timeout="5">
-    	<cfset StructDelete(session,"ga_loginAuth") />
-        <cfset StructDelete(session,"ga_profileID") />
-        
-        <cfset StructDelete(session,"startdate") />
-        <cfset StructDelete(session,"enddate") />
-        
-        <cfset StructDelete(session,"visitsSnapshotArray") />
-        <cfset StructDelete(session,"visitorLoyaltyArray") />
-        <cfset StructDelete(session,"visitsChartArray") />
-        <cfset StructDelete(session,"countryChartArray") />
-        <cfset StructDelete(session,"topPagesArray") />
-    </cflock>
-
+<!--- if logout requested or token expired, log out --->
+<cfif (isDefined("URL.logout") and URL.logout EQ "true") OR (isDefined("session.ga_accessTokenExpiry") AND DateCompare(session.ga_accessTokenExpiry,Now(),"s") LT 0)>
+    <cfinvoke component="ga" method="logout" />
 </cfif>
 
-<cfif NOT isDefined("session.ga_loginAuth") OR session.ga_loginAuth EQ "Authorization Failed">
+<cfif NOT isDefined("session.ga_accessToken") OR session.ga_accessToken CONTAINS "Authorization Failed">
 	<cflocation url="login.cfm" addtoken="no" /> 
 </cfif>
 
 <!---feed URLs - set dimensions and metrics for data returned here--->
-
-			<cfset dataExportURL = "https://www.googleapis.com/analytics/v3/data/ga?ids=ga:" & session.ga_profileID & "&" />
-            <cfset startEndDates = "&start-date=" & session.startdate & "&end-date=" & session.enddate />
+<cfset dataExportURL = "https://www.googleapis.com/analytics/v3/data/ga?ids=ga:" & session.profileID & "&" />
+<cfset startEndDates = "&start-date=" & session.startdate & "&end-date=" & session.enddate />
 			
-        	<cfset visitsSnapshotUrl = dataExportURL & "metrics=ga:newVisits,ga:pageviews,ga:visits,ga:visitors,ga:timeOnSite" & startEndDates />
-
-            <cfset visitorLoyaltyUrl =
-dataExportURL & "dimensions=ga%3AvisitorType&metrics=ga%3Avisits,ga:organicSearches" & startEndDates />
-              
-            <cfset visitsChartUrl = dataExportURL & "dimensions=ga:month&metrics=ga:visits" & startEndDates />
-              
-           <cfset countryChartUrl = dataExportURL & "dimensions=ga:country&metrics=ga:visits&sort=-ga:visits" & startEndDates & "&max-results=5" />
-             
-            <cfset topPagesUrl = dataExportURL & "dimensions=ga:pageTitle&metrics=ga:pageviews&filters=ga:pageTitle!~Page%20Not%20Found&sort=-ga:pageviews" & startEndDates & "&max-results=25" />
+<cfset visitsSnapshotUrl = dataExportURL & "metrics=ga:newVisits,ga:pageviews,ga:visits,ga:visitors,ga:timeOnSite" & startEndDates />
+<cfset visitorLoyaltyUrl = dataExportURL & "dimensions=ga%3AvisitorType&metrics=ga%3Avisits,ga:organicSearches" & startEndDates />
+<cfset visitsChartUrl = dataExportURL & "dimensions=ga:month&metrics=ga:visits" & startEndDates />
+<cfset countryChartUrl = dataExportURL & "dimensions=ga:country&metrics=ga:visits&sort=-ga:visits" & startEndDates & "&max-results=5" />          
+<cfset topPagesUrl = dataExportURL & "dimensions=ga:pageTitle&metrics=ga:pageviews&filters=ga:pageTitle!~Page%20Not%20Found&sort=-ga:pageviews" & startEndDates & "&max-results=25" />
                   	
-        <!---check for session.visitsSnapshotArray to avoid calling/processing GA on page refresh. Info is day old anyway.--->	
-        <cfif NOT isDefined("session.visitsSnapshotArray")>	
+<!---check for session.getNewData to avoid calling/processing GA on page refresh.--->	
+<cfif NOT isDefined("session.getNewData")>	
+ <!---calls GA API and gets data array returned--->
+    <cfinvoke component="ga" method="parseData" returnvariable="visitsSnapshotArray">
+        <cfinvokeargument name="gaUrl" value="#visitsSnapshotUrl#" />
+    </cfinvoke>
+
+    <cfinvoke component="ga" method="parseData" returnvariable="visitorLoyaltyArray">
+        <cfinvokeargument name="gaUrl" value="#visitorLoyaltyUrl#" />
+    </cfinvoke>
+    
+     <cfinvoke component="ga" method="parseData" returnvariable="visitsChartArray">
+        <cfinvokeargument name="gaUrl" value="#visitsChartUrl#" />
+    </cfinvoke> 
+    
+    <cfinvoke component="ga" method="parseData" returnvariable="countryChartArray">
+        <cfinvokeargument name="gaUrl" value="#countryChartUrl#" />
+    </cfinvoke>
+    
+    <cfinvoke component="ga" method="parseData" returnvariable="topPagesArray">
+        <cfinvokeargument name="gaUrl" value="#topPagesUrl#" />
+    </cfinvoke>
         
-        <!---calls GA API and gets data array returned--->
-
-           <cfinvoke component="ga" method="parseData" returnvariable="visitsSnapshotArray">
-                <cfinvokeargument name="gaUrl" value="#visitsSnapshotUrl#" />
-                <cfinvokeargument name="authToken" value="#session.ga_loginAuth#" />
-            </cfinvoke>
-
-            <cfinvoke component="ga" method="parseData" returnvariable="visitorLoyaltyArray">
-                <cfinvokeargument name="gaUrl" value="#visitorLoyaltyUrl#" />
-                <cfinvokeargument name="authToken" value="#session.ga_loginAuth#" />
-            </cfinvoke>
-            
-             <cfinvoke component="ga" method="parseData" returnvariable="visitsChartArray">
-                <cfinvokeargument name="gaUrl" value="#visitsChartUrl#" />
-                <cfinvokeargument name="authToken" value="#session.ga_loginAuth#" />
-            </cfinvoke> 
-            
-            <cfinvoke component="ga" method="parseData" returnvariable="countryChartArray">
-                <cfinvokeargument name="gaUrl" value="#countryChartUrl#" />
-                <cfinvokeargument name="authToken" value="#session.ga_loginAuth#" />
-            </cfinvoke>
-            
-            <cfinvoke component="ga" method="parseData" returnvariable="topPagesArray">
-                <cfinvokeargument name="gaUrl" value="#topPagesUrl#" />
-                <cfinvokeargument name="authToken" value="#session.ga_loginAuth#" />
-            </cfinvoke>
-        
-        	<!---set session vars with data to prevent running calls to GA on page refresh--->
-            <cflock scope="session" type="exclusive" timeout="5">
-                <cfset session.visitsSnapshotArray = visitsSnapshotArray />
-                <cfset session.visitorLoyaltyArray = visitorLoyaltyArray />
-				<cfset session.visitsChartArray = visitsChartArray />
-                <cfset session.countryChartArray = countryChartArray />
-                <cfset session.topPagesArray = topPagesArray />
-			</cflock>
-
+	<!---set session vars with data to prevent running calls to GA on page refresh--->
+    <cflock scope="session" type="exclusive" timeout="5">
+        <cfset session.getNewData = "no" />
+        <cfset session.visitsSnapshotArray = visitsSnapshotArray />
+        <cfset session.visitorLoyaltyArray = visitorLoyaltyArray />
+		<cfset session.visitsChartArray = visitsChartArray />
+        <cfset session.countryChartArray = countryChartArray />
+        <cfset session.topPagesArray = topPagesArray />
+	</cflock>
                             
-        </cfif> 
+</cfif> 
         
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>CPOP Web Stats</title>
-<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1/themes/blitzer/jquery-ui.css" media="screen" />
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
-<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
-
-<link rel="stylesheet" type="text/css" href="css/reset.css" media="screen" />
-<link rel="stylesheet" type="text/css" href="css/960.css" media="screen" />
-<link rel="stylesheet" type="text/css" href="css/text.css" media="screen" />
-<link rel="stylesheet" type="text/css" href="css/style.css" media="screen" />
-
-
+<meta charset="utf-8" />
 <cfoutput>
-<cfheader name='expires' value='#Now()#'>
-<cfheader name='pragma' value='no-cache'>
-<cfheader name='cache-control' value='no-cache, no-store, must-revalidate'>
+	<cfheader name='expires' value='#Now()#'>
+	<cfheader name='pragma' value='no-cache'>
+	<cfheader name='cache-control' value='no-cache, no-store, must-revalidate'>
 </cfoutput>
-<script type="text/javascript" language="javascript">
-$().ready(function() {
-		$("#startdate").datepicker({altField: '#start_alternate',altFormat: 'yy-mm-dd',minDate: new Date(2008, 8 - 1, 1),maxDate: -1});
-		$("#enddate").datepicker({altField: '#end_alternate',altFormat: 'yy-mm-dd',minDate: new Date(2008, 8 - 1, 2),maxDate: -1});	
-	
-	$('button#selectDateRange').click(function(){
-		$('#dialog').dialog('open');
+<title><cfoutput>#session.site#</cfoutput> Web Stats</title>
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1/themes/blitzer/jquery-ui.css" />
+<link rel="stylesheet" href="//jensbits.com/demos/bootstrap/css/bootstrap.min.css" />
+<style>body {padding-top: 60px;}.float_right{float:right}</style>
+<link rel="stylesheet" href="//jensbits.com/demos/bootstrap/css/bootstrap-responsive.min.css" />
 
-	});
-
-});
-
-$(function(){
-				
-	// jQuery UI Dialog						
-	$('#dialog').dialog({
-		autoOpen: false,
-		width: 400,
-		modal: true,
-		resizable: false,
-		buttons: {
-			"Close": function() { 
-				
-				$(this).dialog("close"); 
-			}, 
-			"Submit": function() { 
-			var errors = 0;
-			
-			if (errors == 0){
-				
-				dataString = $('form').serialize();
-				$.ajax({
-				type: "POST",
-				url: "dateRange.cfm",
-				data: dataString,
-				dataType: "json",
-				success: function(data) {
-
-				if(data == 'invalid'){ 
-					$('#message').html("<div class='errorMessage'>Date range is invalid.</div>"); 
-				} else {
-					$('#message').html("<div class='successMessage'>Loading new data. Please wait.</div>");
-					location.reload();
-				}
-			 	 
-				}
-				
-				});
-				
-				return false;
-				
-			}
-				
-			}
-		}
-	});
-	
-	$('#site_dialog').dialog({
-		autoOpen: false,
-		width: 400,
-		modal: true,
-		resizable: false,
-		buttons: {
-			"Submit": function() {
-				dataString = $('form').serialize();
-				$.ajax({
-					type: "POST",
-					url: "siteSelect.cfm",
-					data: dataString,
-					dataType: "json",
-					success: function(data) {
-						$('#message_site').html("<div class='successMessage'>Loading new data. Please wait.</div>");
-						$('#siteSelectForm, .ui-dialog-buttonpane, .ui-dialog-titlebar-close').hide();
-						$('#site_dialog').dialog({ closeOnEscape: false });
-						location.reload();
-					}
-				});
-			return false;
-			},
-			"Close": function() {
-				$(this).dialog("close");
-			}
-		}
-	});
-});
-</script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
+<script src="js/util.js"></script>
 </head>
 <body>
 <cfoutput>
-<div id="wrapper">
-	
-	<div id="header" class="container_16">
-		<h1>Web Stats</h1>
-        <h2>#DateFormat(session.startdate,"mmmm d, yyyy")# - #DateFormat(session.enddate,"mmmm d, yyyy")#</h2>
-	</div>
-
-<div id="content-wrap" class="container_16">
-
-<div id="logout"><a href="index.cfm?logout=true">Logout</a></div>
-
-<button id="selectDateRange">Select New Date Range</button>	 
-
-        	<!---output--->
-        
-			<div class="grid_16" style="margin-top: 1em;">
-            
-            <div class="grid_5">
-            <table cellpadding="0" cellspacing="0" border="0" class="dataTable">
-            <caption><h2>Pageviews</h2></caption>
-            
-             <tr class="oddrow">
-             	<th><h3>Pageviews</h3></th>
-                <td class="align-right">#NumberFormat(session.visitsSnapshotArray[1].pageviews,",")#</td>
-             </tr>
-             <tr>
-                <th><h3>Avg Per Day</h3></th>
-                <td class="align-right">#NumberFormat(session.visitsSnapshotArray[1].pageviews/daysInRange,",")#</td>
-             </tr>
-             <tr class="oddrow">
-                <th><h3>Avg per Visit</h3></th>
-                <td class="align-right">#NumberFormat(session.visitsSnapshotArray[1].pageviews/session.visitsSnapshotArray[1].visits,"0.00")#</td>
-             </tr>
-
+<div class="navbar navbar-fixed-top">
+	<div class="navbar-inner">
+		<div class="container">
+        	<a class="btw btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
+          <a class="brand" href="index.cfm">Google Analytics API with ColdFusion</a>
+          <div class="nav-collapse">
+              <ul class="nav">
+                <li class="active"><a href="http://www.jensbits.com/">Home</a></li>
+              </ul>
+          </div>
+        </div>
+    </div>
+</div>
+<div class="container">   
+<div class="hero-unit">
+	<h1>#session.site#</h1>
+    <h2>#DateFormat(session.startdate,"mmmm d, yyyy")# - #DateFormat(session.enddate,"mmmm d, yyyy")#</h2>
+	<p class="float_right"><a class="btn btn-danger" href="index.cfm?logout=true">Logout</a></p> 
+	<p><button class="btn btn-primary" id="selectDateRange">Select New Date Range</button>	
+		<button class="btn btn-info" id="selectSite">Select New Site</button></p>
+ </div>
+     <div class="row">
+     	<div class="span4">  	
+        <!---output--->
+            <table class="table table-bordered table-striped">
+            	<caption><h2>Pageviews</h2></caption>
+	             <tr>
+	             	<th>Pageviews</th>
+	                <td>#NumberFormat(session.visitsSnapshotArray[1].pageviews,",")#</td>
+	             </tr>
+	             <tr>
+	                <th>Avg Per Day</th>
+	                <td>#NumberFormat(session.visitsSnapshotArray[1].pageviews/daysInRange,",")#</td>
+	             </tr>
+	             <tr>
+	                <th>Avg per Visit</th>
+	                <td class="align-right">#NumberFormat(session.visitsSnapshotArray[1].pageviews/session.visitsSnapshotArray[1].visits,"0.00")#</td>
+	             </tr>
             </table>
             </div>
                       
-            <div class="grid_5" >
-            <table cellpadding="0" cellspacing="0" border="0" class="dataTable">
-            <caption><h2>Visits</h2></caption>
-            
-             <tr class="oddrow">
-             	<th><h3>Visits</h3></th>
-                <td class="align-right">#NumberFormat(session.visitsSnapshotArray[1].visits,",")#</td>
-             </tr>
-             <tr>
-             	<th><h3>Avg Per Day</h3></th>
-                <td class="align-right">#NumberFormat(session.visitsSnapshotArray[1].visits/daysInRange,",")#</td>
-             </tr>
-             <tr class="oddrow">
-                <th><h3>Avg Visit Duration</h3></th>
-                <td class="align-right">#TimeFormat(CreateTime((session.visitsSnapshotArray[1].timeOnSite/session.visitsSnapshotArray[1].visits)/3600,(session.visitsSnapshotArray[1].timeOnSite/session.visitsSnapshotArray[1].visits)/60,(session.visitsSnapshotArray[1].timeOnSite/session.visitsSnapshotArray[1].visits) Mod 60), "HH:mm:ss")#</td>
-             </tr>
-
+            <div class="span4"> 
+            <table class="table table-bordered table-striped">
+	            <caption><h2>Visits</h2></caption>
+	             <tr>
+	             	<th>Visits</th>
+	                <td>#NumberFormat(session.visitsSnapshotArray[1].visits,",")#</td>
+	             </tr>
+	             <tr>
+	             	<th>Avg Per Day</th>
+	                <td>#NumberFormat(session.visitsSnapshotArray[1].visits/daysInRange,",")#</td>
+	             </tr>
+	             <tr>
+	                <th>Avg Visit Duration</th>
+	                <td>#TimeFormat(CreateTime((session.visitsSnapshotArray[1].timeOnSite/session.visitsSnapshotArray[1].visits)/3600,(session.visitsSnapshotArray[1].timeOnSite/session.visitsSnapshotArray[1].visits)/60,(session.visitsSnapshotArray[1].timeOnSite/session.visitsSnapshotArray[1].visits) Mod 60), "HH:mm:ss")#</td>
+	             </tr>
             </table>
             </div>	
             
-            <div class="grid_5" >
-            <table cellpadding="0" cellspacing="0" border="0" class="dataTable">
-            <caption><h2>Visitors</h2></caption>
-            
-             <tr class="oddrow">
-             	<th><h3>Visitors</h3></th>
-                <td class="align-right">#NumberFormat(session.visitsSnapshotArray[1].visitors,",")#</td>
-             </tr>
-             <tr>
-                <th><h3>Visits from New Visitors</h3></th>
-                <td class="align-right">#NumberFormat(session.visitorLoyaltyArray[1].visits,",")#</td>
-             </tr>
-             <tr class="oddrow">
-                <th><h3>Visits from Returning Visitors</h3></th>
-                    <td class="align-right">#NumberFormat(session.visitorLoyaltyArray[2].visits,",")#</td>
-             </tr>
-              <tr>
-                <th><h3>Avg Visits per Visitor</h3></th>
-                <td class="align-right">#NumberFormat(session.visitsSnapshotArray[1].visits/session.visitsSnapshotArray[1].visitors,"0.00")#</td>
-             </tr>
-
+            <div class="span4"> 
+            <table class="table table-bordered table-striped">
+	            <caption><h2>Visitors</h2></caption>
+	             <tr>
+	             	<th>Visitors</th>
+	                <td>#NumberFormat(session.visitsSnapshotArray[1].visitors,",")#</td>
+	             </tr>
+	             <tr>
+	                <th>Visits from New Visitors</th>
+	                <td>#NumberFormat(session.visitorLoyaltyArray[1].visits,",")#</td>
+	             </tr>
+	             <tr>
+	                <th>Visits from Returning Visitors</th>
+	                    <td>#NumberFormat(session.visitorLoyaltyArray[2].visits,",")#</td>
+	             </tr>
+	              <tr>
+	                <th>Avg Visits per Visitor</th>
+	                <td>#NumberFormat(session.visitsSnapshotArray[1].visits/session.visitsSnapshotArray[1].visitors,"0.00")#</td>
+	             </tr>
             </table>
             </div>
             
-            </div>
+        </div>
             
-            <div class="grid_16" style="margin-top: 1em;text-align: center;">
+        <div class="row">
+     	<div class="span9 offset3"> 
             
             <h2>Visits Trend</h2>
             
-            <!--- style from webcharts --->
+            <!--- style for webcharts --->
             <cfsavecontent variable="style">
-               <?xml version="1.0" encoding="UTF-8"?>
+             <?xml version="1.0" encoding="UTF-8"?>
              <frameChart is3D="false">
               <frame xDepth="12" yDepth="11"/>
               <xAxis>
                    <labelStyle color="##333333"/>
               </xAxis>
               <yAxis scaleMin="0" scaleMax="500">
-                   <labelStyle color="##333333"/>
+              	<labelStyle color="##333333"/>
               </yAxis>
-               <legend allowSpan="true" equalCols="false" isVisible="false" halign="Right" isMultiline="true">
-               <decoration style="None"/>
-          </legend>
+              <legend allowSpan="true" equalCols="false" isVisible="false" halign="Right" isMultiline="true">
+               	<decoration style="None"/>
+          	  </legend>
               <decoration style="RoundShadow"/>
               <paint palette="Pastel" isVertical="true" min="47" max="83"/>
               <insets right="5"/>
@@ -309,13 +199,12 @@ $(function(){
             <cfchart yaxistitle="Number of Visits" chartwidth="600" style="#style#" format="jpg" tipstyle="none">
             	<cfchartseries type="bar" datalabelstyle="value">
                     <cfloop from="1" to="#ArrayLen(session.visitsChartArray)#" index="num">
-                    		<cfchartdata item="#MonthAsString(session.visitsChartArray[num].month)#" value="#session.visitsChartArray[num].visits#" />
+                    	<cfchartdata item="#MonthAsString(session.visitsChartArray[num].month)#" value="#session.visitsChartArray[num].visits#" />
                     </cfloop>
                 </cfchartseries>
             </cfchart>
             
-            
-            <cfelse>
+          <cfelse>
             
              <cfchart yaxistitle="Number of Visits" chartwidth="600" style="#style#" format="jpg" tipstyle="none">
             	<cfchartseries type="bar" datalabelstyle="value">
@@ -325,10 +214,12 @@ $(function(){
                 </cfchartseries>
             </cfchart>
             
-            </cfif>
-            </div>
-            
-           <div class="grid_16" style="margin-top: 1em;text-align: center;">
+          </cfif>
+          </div>
+      </div>
+      <div class="row">
+     	<div class="span9 offset3">       
+
            <cfsavecontent variable="style2">
                <?xml version="1.0" encoding="UTF-8"?>
              <frameChart is3D="false">
@@ -372,31 +263,28 @@ $(function(){
             </cfchart>
             	
           </div>
-          
-           <div class="grid_14 prefix_1 suffix_1" style="margin-top: 1em;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" class="dataTable listTable">
-            <caption><h2>Top Pages Summary</h2></caption>
-
-            <tr class="headerRow">
-            	<th>&nbsp;</th>
-                <th>Title</th>
-                <th width="10%">Pageviews</th>
-            </tr>
-
-            <cfloop from="1" to="#ArrayLen(session.topPagesArray)#" index="num">
-            <tr <cfif num MOD 2> class="oddrow"</cfif>>
-           		<td>#num#</td>
-                <td>#session.topPagesArray[num].pageTitle#</td>
-                <td class="align-right">#NumberFormat(session.topPagesArray[num].pageviews,",")#</td>
-            </tr>
-            </cfloop>
-
+      </div>
+      <div class="row">
+     	<div class="span12">   
+            <table class="table table-bordered table-striped">
+	            <caption><h2>Top Pages Summary</h2></caption>
+	            <tr>
+	            	<th>&nbsp;</th>
+	                <th>Title</th>
+	                <th width="10%">Pageviews</th>
+	            </tr>
+	            <cfloop from="1" to="#ArrayLen(session.topPagesArray)#" index="num">
+	            <tr>
+	           		<td>#num#</td>
+	                <td>#HTMLEditFormat(session.topPagesArray[num].pageTitle)#</td>
+	                <td class="align-right">#NumberFormat(session.topPagesArray[num].pageviews,",")#</td>
+	            </tr>
+	            </cfloop>
             </table>
            </div>       
-
-</div>		 
+       </div>		 
 </div>
-</cfoutput>
+
 
 <div id="dialog" title="Select Date Range">
 <div id="message"></div>
@@ -411,13 +299,14 @@ $(function(){
 <div id="site_dialog" title="Select Site">
 <div id="message_site"></div>
     <form name="siteSelect" id="siteSelectForm" action="index.cfm" method="post">
-    <label for="tableId">Select Site</label>
-    <select name="tableId" id="tableId">
+    <label for="profileId">Select Site</label>
+    <select name="profileId" id="profileId">
     <cfloop array="#session.profilesArray#" index="profile">
-    <option value="#profile.tableId#|#profile.title#">#profile.title#</option>
+    	<option value="#profile.profileId#,#profile.title#">#profile.title#</option>
     </cfloop>
     </select>
     </form>
 </div>
+</cfoutput>
 </body>
 </html>

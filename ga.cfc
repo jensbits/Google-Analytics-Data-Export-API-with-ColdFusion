@@ -2,62 +2,56 @@
  
  	<cffunction name="googleOauth2Login" access="public" hint="GA account authorization">
         <cfargument name="code" type="string" required="yes" default="">
-        <cfargument name="client_id" type="string" required="yes" default="">
-        <cfargument name="client_secret" type="string" required="yes" default="">
-        <cfargument name="redirect_uri" type="string" required="yes" default="">
-        <cfargument name="state" type="string"required="yes" default="">
         <cfargument name="gaOauthUrl" type="string" required="no" default="https://accounts.google.com/o/oauth2/token">
     
         <cfset jsonResponse = StructNew() />
-		<cfset var loginAuth = "" />
+		<cfset var accessToken = "" />
            
         <cfhttp url="#arguments.gaOauthUrl#" method="post">
        		<cfhttpparam name="code" type="formField" value="#arguments.code#">
-       		<cfhttpparam name="client_id" type="formField" value="#arguments.client_id#">
-       		<cfhttpparam name="client_secret" type="formField" value="#arguments.client_secret#">
-       		<cfhttpparam name="redirect_uri" type="formField" value="#arguments.redirect_uri#">
+       		<cfhttpparam name="client_id" type="formField" value="#request.oauthSettings['client_id']#">
+       		<cfhttpparam name="client_secret" type="formField" value="#request.oauthSettings['client_secret']#">
+       		<cfhttpparam name="redirect_uri" type="formField" value="#request.oauthSettings['redirect_uri']#">
        		<cfhttpparam name="grant_type" type="formField" value="authorization_code">
 		</cfhttp>
     
         <cfset jsonResponse = DeserializeJSON(cfhttp.filecontent) />
         <cfif StructKeyExists(jsonResponse, "access_token")>
-	        <cfset loginAuth = jsonResponse.access_token />
+	        <cfset accessToken = jsonResponse.access_token />
+	        <cfset expires_in = jsonResponse.expires_in />
         <cfelse>
-         	<cfset loginAuth = "Authorization Failed " & cfhttp.filecontent />
+         	<cfset accessToken = "Authorization Failed " & cfhttp.filecontent />
         </cfif>
 
         <cflock scope="session" type="exclusive" timeout="5">
-			<cfset session.ga_loginAuth = loginAuth />
+			<cfset session.ga_accessToken = accessToken />
+			<cfset session.ga_accessTokenExpiry = DateAdd("s",expires_in,Now()) />
 		</cflock>
+		<!---send back to login to show auth error message or profile select options--->
+		<!---this also strips code URL param to prevent inadvertent refresh with one-time use code--->
+		<cflocation url="login.cfm" addtoken="no"/>
     </cffunction>
-       
-    <cffunction name="googleLogin" access="public" returntype="string" hint="GA account authorization">
-        <!---No longer used for security reasons--->
-        <cfargument name="email" type="string" required="yes" default="">
-        <cfargument name="password" type="string"required="yes" default="">
-        <cfargument name="gaLoginUrl" type="string" required="no" default="https://www.google.com/accounts/ClientLogin">
     
-        <cfset var loginAuth = "" />
-           
-        <cfhttp url="#arguments.gaLoginUrl#" method="post">
-            <cfhttpparam name="accountType" type="url" value="GOOGLE">
-            <cfhttpparam name="Email" type="url" value="#arguments.email#">
-            <cfhttpparam name="Passwd" type="url" value="#arguments.password#">
-            <cfhttpparam name="service" type="url" value="analytics">
-            <cfhttpparam name="source" type="url" value="popcenter-analytics">
-        </cfhttp>
+    <cffunction name="logout" access="public" hint="logout">
+    	<cflock scope="session" type="exclusive" timeout="5">
+	    	<cfset StructDelete(session,"ga_accessToken") />
+	        <cfset StructDelete(session,"profileID") />
+	        <cfset StructDelete(session,"getNewData") />
+	        
+	        <cfset StructDelete(session,"startdate") />
+	        <cfset StructDelete(session,"enddate") />
+	        
+	        <cfset StructDelete(session,"profilesArray") />
+	        <cfset StructDelete(session,"visitsSnapshotArray") />
+	        <cfset StructDelete(session,"visitorLoyaltyArray") />
+	        <cfset StructDelete(session,"visitsChartArray") />
+	        <cfset StructDelete(session,"countryChartArray") />
+	        <cfset StructDelete(session,"topPagesArray") />
+    	</cflock>
     
-        <cfif NOT FindNoCase("Auth=",cfhttp.filecontent)>
-            <cfset loginAuth = "Authorization Failed" />
-        <cfelse>
-            <cfset loginAuth = Mid(cfhttp.filecontent, FindNoCase("Auth=",cfhttp.filecontent) + (Len("Auth=")), Len(cfhttp.filecontent)) />
-        </cfif>
-        
-         <cflock scope="session" type="exclusive" timeout="5">
-				<cfset session.ga_loginAuth = loginAuth />
-		</cflock>
-
-        <cfreturn loginAuth />
+   		<cfif isDefined("session.ga_accessTokenExpiry") AND DateCompare(session.ga_accessTokenExpiry,Now()) LT 0>
+    		<cfset session.ga_accessToken = "Authorization Failed: Access token expired" />
+    	</cfif>
     </cffunction>
     
     <cffunction name="callApi" access="public" returntype="any" hint="GA data">
@@ -76,41 +70,48 @@
          <cfreturn responseOutput />
     </cffunction>
     
-    <cffunction name="parseProfiles" access="public" returntype="array" hint="GA profiles as array of structures">
+    <cffunction name="parseProfiles" access="public" hint="GA profiles as array of structures">
     	<cfargument name="gaUrl" type="string" required="no" default="https://www.googleapis.com/analytics/v3/management/accounts/~all/webproperties/~all/profiles">
-        <cfargument name="authToken" type="string" required="yes">
+        <cfargument name="authToken" type="string" required="no" default="#session.ga_accessToken#">
     
-        <cfset var accountsResponse = callApi(arguments.gaUrl,arguments.authToken) />
-		<cfset var accountsArray =  ArrayNew(1) />
+        <cfset var profilesResponse = callApi(arguments.gaUrl,arguments.authToken) />
         <cfset var profilesArray = ArrayNew(1) />
-        <cfset var entryStruct = StructNew() />
+		<cfset var itemsArray =  ArrayNew(1) />
+        <cfset var itemStruct = StructNew() />
         
-         <!---check to see if they have any GA account profiles--->
-        <cfif StructKeyExists(accountsResponse,"items")>
-         	<cfset accountsArray = accountsResponse.items />
-            <cfloop from="1" to="#ArrayLen(accountsArray)#" index="num">
-				<cfset entryStruct.title = accountsArray[num].name />
-            	<cfset entryStruct.tableId = accountsArray[num].id/>
+         <!---check to see if they have any GA profiles, put any found in struct--->
+        <cfif StructKeyExists(profilesResponse,"items")>
+         	<cfset itemsArray = profilesResponse.items />
+            <cfloop from="1" to="#ArrayLen(itemsArray)#" index="num">
+				<cfset itemStruct.title = itemsArray[num].name />
+                <cfset itemStruct.profileId = itemsArray[num].id />
                 
-                <cfset arrayAppend(profilesArray,duplicate(entryStruct)) />
+                <cfset arrayAppend(profilesArray,duplicate(itemStruct)) />
             </cfloop>
         </cfif>
-        
-        <cfdump var="#profilesArray#">
-        <cfabort>
-        
-        <cfif NOT ArrayLen(profilesArray)><!---they have no GA account profiles--->
+        <!---they have no GA account profiles--->
+        <cfif NOT ArrayLen(profilesArray)>
         	<cflock scope="session" type="exclusive" timeout="5">
-				<cfset session.ga_loginAuth = "Authorization Failed" />
+				<cfset session.ga_accessToken = "Authorization Failed: No Google Analytics profiles associated with account." />
 			</cflock>
 		</cfif>
-        
-        <cfreturn profilesArray />      
+        <!---if they only have 1 profile assoc w/ their login, send them to stats page --->
+		<cfif isDefined("session.profilesArray") AND ArrayLen(session.profilesArray) EQ 1>
+ 			<cflock scope="session" type="exclusive" timeout="5">
+				<cfset session.profileId = session.profilesArray[1].profileId />
+        		<cfset session.site = session.profilesArray[1].title />
+			</cflock>
+			<cflocation url="index.cfm" addtoken="no"/>
+		<cfelse>
+			<cflock scope="session" type="exclusive" timeout="5">
+				<cfset session.profilesArray = profilesArray />
+			</cflock>
+		</cfif>     
     </cffunction>
 
     <cffunction name="parseData" access="public" returntype="array" hint="GA data as array of structures">
         <cfargument name="gaUrl" type="string" required="yes">
-        <cfargument name="authToken" type="string" required="yes">
+        <cfargument name="authToken" type="string" required="no" default="#session.ga_accessToken#">
         
         <cfset var returnArray = ArrayNew(1) />
         <cfset dataStruct = StructNew() />
@@ -120,7 +121,7 @@
          <cfif StructKeyExists(dataNodes,"error") AND dataNodes.error.message EQ "Forbidden">
          
          	<cflock scope="session" type="exclusive" timeout="5">
-				<cfset session.ga_loginAuth = "Authorization Failed" />
+				<cfset session.ga_accessToken = "Authorization Failed" />
 			</cflock>
             <cflocation url="index.cfm" addtoken="no"/>
             
