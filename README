@@ -1,7 +1,13 @@
-** 2/22/12 Update in progress to use OAuth2 **
+** 3/8/12 Update in progress to use OAuth2 **
 
 Requirements:
 ColdFusion 8.0.1 or greater
+
+Prerequisites:
+Register the app, put in redirect URI, and turn on the Google Analytics service in the Google APIs Console
+https://code.google.com/apis/console/#access
+
+Use client ID and client secret from console in oauthsettings of application.cfc
 
 Uses Twitter Bootstrap CSS, jQuery, jQuery UI.
 
