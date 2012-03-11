@@ -28,15 +28,16 @@
                    & "&response_type=code&client_id=" & request.oauthSettings["client_id"]
                    & "&access_type=online" />
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta charset="utf-8" />
 <title>Web Stats</title>
-<link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/css/bootstrap.min.css" />
 <style>body {padding-top: 60px;}.float_right{float:right}</style>
-<link rel="stylesheet" href="/bootstrap/css/bootstrap-responsive.min.css" />
+<link rel="stylesheet" href="/css/bootstrap-responsive.min.css" />
 </head>
 <body>
+<cfoutput>
 <div class="navbar navbar-fixed-top">
 	<div class="navbar-inner">
 		<div class="container">
@@ -61,7 +62,7 @@
    	<!--- else have them pick the profile they want stats for --->
     <cfif isDefined("session.profilesArray")>
         <p class="float_right"><a class="btn btn-danger" href="index.cfm?logout=true">Logout</a></p>
-         <cfoutput>
+
     		<form class="form-horizontal" name="siteSelect" method="post" action="login.cfm">
     		 <div class="control-group">
                 <label class="control-label" for="profileId">Select Site</label>
@@ -77,17 +78,17 @@
          		<button class="btn btn-primary" type="submit" id="submitSite">Submit</button>
          	  </div>
     		</form>
-    </cfoutput>
 	<!---else no profiles and they need to log in --->
 	<cfelse>
          <cfif isDefined("URL.code") AND URL.code EQ "access_denied">
 		 	<p class='alert alert-error'>Google authorization failed.</p>
         <cfelseif isDefined("session.ga_accessToken") AND session.ga_accessToken CONTAINS "Authorization Failed">
-			<div class='alert alert-error'><cfoutput><p><strong>#session.ga_accessToken#</strong></p></cfoutput><p>Google authorization failed.</p></div>
+			<div class='alert alert-error'><p><strong>#session.ga_accessToken#</strong></p><p>Google authorization failed.</p></div>
 		</cfif>
-        <p><a class="btn btn-primary" href="<cfoutput>#loginURL#</cfoutput>">Login with Google account that has access to analytics</a></p>
+        <p><a class="btn btn-primary" href="#loginURL#">Login with Google account that has access to analytics</a></p>
   </cfif> 
 </div>       
 </div>
+</cfoutput>
 </body>
 </html>
