@@ -1,4 +1,4 @@
-** 3/8/12 Update in progress to use OAuth2 **
+** 3/10/12 Update in progress to use OAuth2 **
 
 Requirements:
 ColdFusion 8.0.1 or greater
@@ -18,4 +18,7 @@ Allows for log in to Google Analytics via OAuth2.
 Returns list of profiles (sites) if more than one associated with log in.
 After site selection (or immediately if only one profile available), queries Google Analytics Data Export API.
 Returns visitor data, top pages data, and top referrers data as tables or graphs.
+
+Demo:
+http://www.cf-jensbits.com/demos/ga/
 
