@@ -1,3 +1,7 @@
+<cfif NOT isDefined("session.ga_accessToken") OR session.ga_accessToken CONTAINS "Authorization Failed">
+	<cflocation url="login.cfm" addtoken="no" /> 
+</cfif>
+
 <cfinvoke component="ga" method="init" />
 
 <cfset daysInRange = DateDiff("d",session.startdate,session.enddate) + 1 />
@@ -5,10 +9,6 @@
 <!--- if logout requested or token expired, log out --->
 <cfif (isDefined("URL.logout") and URL.logout EQ "true") OR (isDefined("session.ga_accessTokenExpiry") AND DateCompare(session.ga_accessTokenExpiry,Now(),"s") LT 0)>
     <cfinvoke component="ga" method="logout" />
-</cfif>
-
-<cfif NOT isDefined("session.ga_accessToken") OR session.ga_accessToken CONTAINS "Authorization Failed">
-	<cflocation url="login.cfm" addtoken="no" /> 
 </cfif>
       
 <!DOCTYPE html>
