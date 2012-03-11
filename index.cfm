@@ -139,10 +139,10 @@
     		</frameChart>
             </cfsavecontent>
             
-             <cfchart yaxistitle="Number of Visits" chartwidth="600" style="#style#" format="jpg" tipstyle="none">
+            <cfchart yaxistitle="Number of Visits" chartwidth="600" style="#style#" format="jpg" tipstyle="none">
             	<cfchartseries type="bar" datalabelstyle="value">
                     <cfloop from="1" to="#ArrayLen(session.visitsChartArray)#" index="num">
-                    	<cfchartdata item="#MonthAsString(session.visitsChartArray[num].month)#" value="#session.visitsChartArray[num].visits#" />
+                    	<cfchartdata item="#MonthAsString(session.visitsChartArray[num].month)# #session.visitsChartArray[num].year#" value="#session.visitsChartArray[num].visits#" />
                     </cfloop>
                 </cfchartseries>
             </cfchart>
