@@ -23,7 +23,8 @@
 	output="false"
 	hint="Fires when the session is first created.">
  
- 	<!---set cfid/cftoken as non-persistent cookies so session ends on browser close --->
+ 	<!---set cfid/cftoken as non-persistent cookies so session ends on browser close  --->
+ 	<!---not needed for j2ee --->
         <cfif not IsDefined("Cookie.CFID")>
             <cflock scope="session" type="readonly" timeout="5">
                 <cfcookie name="CFID" value="#session.CFID#">
