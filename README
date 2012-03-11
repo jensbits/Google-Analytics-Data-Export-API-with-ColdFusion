@@ -20,5 +20,5 @@ After site selection (or immediately if only one profile available), queries Goo
 Returns visitor data, top pages data, and top referrers data as tables or graphs.
 
 Demo:
-http://www.cf-jensbits.com/demos/ga/
+http://www.cf-jensbits.com/demos/cf/ga/
 
