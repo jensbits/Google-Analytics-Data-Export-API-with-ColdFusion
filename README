@@ -1,5 +1,3 @@
-** 3/10/12 Update in progress to use OAuth2 **
-
 Requirements:
 ColdFusion 8.0.1 or greater
 
@@ -21,4 +19,7 @@ Returns visitor data, top pages data, and top referrers data as tables or graphs
 
 Demo:
 http://www.cf-jensbits.com/demos/cf/ga/
+
+Post:
+http://www.jensbits.com/2012/04/05/google-analytics-reporting-api-using-oauth-2-with-coldfusion/
 
