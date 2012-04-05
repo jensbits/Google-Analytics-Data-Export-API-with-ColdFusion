@@ -1,13 +1,3 @@
-<!---dates for one full year of stats (default)--->
-<cfif (NOT isDefined("session.startdate")) AND (NOT isDefined("session.enddate"))>
-    <cflock scope="session" type="exclusive" timeout="5">
-        <cfset session.startdate = DateFormat(DateAdd("d",-365,Now()), "yyyy-mm-dd") />
-        <cfset session.enddate = DateFormat(DateAdd("d", -1, Now()),"yyyy-mm-dd") />
-    </cflock>
-</cfif>
-
-<cfset daysInRange = DateDiff("d",session.startdate,session.enddate) + 1 />
-
 <!--- if logout requested or token expired, log out --->
 <cfif (isDefined("URL.logout") and URL.logout EQ "true") OR (isDefined("session.ga_accessTokenExpiry") AND DateCompare(session.ga_accessTokenExpiry,Now(),"s") LT 0)>
     <cfinvoke component="ga" method="logout" />
@@ -17,65 +7,19 @@
 	<cflocation url="login.cfm" addtoken="no" /> 
 </cfif>
 
-<!---feed URLs - set dimensions and metrics for data returned here--->
-<cfset dataExportURL = "https://www.googleapis.com/analytics/v3/data/ga?ids=ga:" & session.profileID & "&" />
-<cfset startEndDates = "&start-date=" & session.startdate & "&end-date=" & session.enddate />
-			
-<cfset visitsSnapshotUrl = dataExportURL & "metrics=ga:newVisits,ga:pageviews,ga:visits,ga:visitors,ga:timeOnSite" & startEndDates />
-<cfset visitorLoyaltyUrl = dataExportURL & "dimensions=ga%3AvisitorType&metrics=ga%3Avisits,ga:organicSearches" & startEndDates />
-<cfset visitsChartUrl = dataExportURL & "dimensions=ga:month&metrics=ga:visits" & startEndDates />
-<cfset countryChartUrl = dataExportURL & "dimensions=ga:country&metrics=ga:visits&sort=-ga:visits" & startEndDates & "&max-results=5" />          
-<cfset topPagesUrl = dataExportURL & "dimensions=ga:pageTitle&metrics=ga:pageviews&filters=ga:pageTitle!~Page%20Not%20Found&sort=-ga:pageviews" & startEndDates & "&max-results=25" />
-                  	
-<!---check for session.getNewData to avoid calling/processing GA on page refresh.--->	
-<cfif NOT isDefined("session.getNewData")>	
- <!---calls GA API and gets data array returned--->
-    <cfinvoke component="ga" method="parseData" returnvariable="visitsSnapshotArray">
-        <cfinvokeargument name="gaUrl" value="#visitsSnapshotUrl#" />
-    </cfinvoke>
+<cfinvoke component="ga" method="init" />
 
-    <cfinvoke component="ga" method="parseData" returnvariable="visitorLoyaltyArray">
-        <cfinvokeargument name="gaUrl" value="#visitorLoyaltyUrl#" />
-    </cfinvoke>
-    
-     <cfinvoke component="ga" method="parseData" returnvariable="visitsChartArray">
-        <cfinvokeargument name="gaUrl" value="#visitsChartUrl#" />
-    </cfinvoke> 
-    
-    <cfinvoke component="ga" method="parseData" returnvariable="countryChartArray">
-        <cfinvokeargument name="gaUrl" value="#countryChartUrl#" />
-    </cfinvoke>
-    
-    <cfinvoke component="ga" method="parseData" returnvariable="topPagesArray">
-        <cfinvokeargument name="gaUrl" value="#topPagesUrl#" />
-    </cfinvoke>
-        
-	<!---set session vars with data to prevent running calls to GA on page refresh--->
-    <cflock scope="session" type="exclusive" timeout="5">
-        <cfset session.getNewData = "no" />
-        <cfset session.visitsSnapshotArray = visitsSnapshotArray />
-        <cfset session.visitorLoyaltyArray = visitorLoyaltyArray />
-		<cfset session.visitsChartArray = visitsChartArray />
-        <cfset session.countryChartArray = countryChartArray />
-        <cfset session.topPagesArray = topPagesArray />
-	</cflock>
-                            
-</cfif> 
-        
+<cfset daysInRange = DateDiff("d",session.startdate,session.enddate) + 1 />
+      
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<cfoutput>
-	<cfheader name='expires' value='#Now()#'>
-	<cfheader name='pragma' value='no-cache'>
-	<cfheader name='cache-control' value='no-cache, no-store, must-revalidate'>
-</cfoutput>
 <title><cfoutput>#session.site#</cfoutput> Web Stats</title>
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1/themes/blitzer/jquery-ui.css" />
-<link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css" />
+<link rel="stylesheet" href="/css/bootstrap.min.css" />
 <style>body {padding-top: 60px;}.float_right{float:right}</style>
-<link rel="stylesheet" href="/bootstrap/css/bootstrap-responsive.min.css" />
+<link rel="stylesheet" href="/css/bootstrap-responsive.min.css" />
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
@@ -194,27 +138,15 @@
               <insets right="5"/>
     		</frameChart>
             </cfsavecontent>
-          
-          <cfif Year(session.startdate) EQ Year(session.enddate)>
+            
             <cfchart yaxistitle="Number of Visits" chartwidth="600" style="#style#" format="jpg" tipstyle="none">
             	<cfchartseries type="bar" datalabelstyle="value">
                     <cfloop from="1" to="#ArrayLen(session.visitsChartArray)#" index="num">
-                    	<cfchartdata item="#MonthAsString(session.visitsChartArray[num].month)#" value="#session.visitsChartArray[num].visits#" />
+                    	<cfchartdata item="#MonthAsString(session.visitsChartArray[num].month)# #session.visitsChartArray[num].year#" value="#session.visitsChartArray[num].visits#" />
                     </cfloop>
                 </cfchartseries>
             </cfchart>
             
-          <cfelse>
-            
-             <cfchart yaxistitle="Number of Visits" chartwidth="600" style="#style#" format="jpg" tipstyle="none">
-            	<cfchartseries type="bar" datalabelstyle="value">
-                    <cfloop from="1" to="#ArrayLen(session.visitsChartArray)#" index="num">
-                    		<cfchartdata item="#DateFormat(DateAdd('m',session.visitsChartArray[num].month-1, session.startdate),'mmm')#" value="#session.visitsChartArray[num].visits#" />
-                    </cfloop>
-                </cfchartseries>
-            </cfchart>
-            
-          </cfif>
           </div>
       </div>
       <div class="row">

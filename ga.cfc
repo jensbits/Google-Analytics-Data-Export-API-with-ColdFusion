@@ -54,6 +54,45 @@
     	</cfif>
     </cffunction>
     
+    <cffunction name="init" access="public" hint="initialize vars">
+   		<!---dates for one full year of stats (default)--->
+		<cfif (NOT isDefined("session.startdate")) AND (NOT isDefined("session.enddate"))>
+		    <cflock scope="session" type="exclusive" timeout="5">
+		        <cfset session.startdate = DateFormat(DateAdd("d",-366,Now()), "yyyy-mm-dd") />
+		        <cfset session.enddate = DateFormat(DateAdd("d", -1, Now()),"yyyy-mm-dd") />
+		    </cflock>
+		</cfif>
+		<!---feed URLs - set dimensions and metrics for data returned here--->
+		<cfset dataExportURL = "https://www.googleapis.com/analytics/v3/data/ga?ids=ga:" & session.profileID & "&" />
+		<cfset startEndDates = "&start-date=" & session.startdate & "&end-date=" & session.enddate />
+					
+		<cfset visitsSnapshotUrl = dataExportURL & "metrics=ga:newVisits,ga:pageviews,ga:visits,ga:visitors,ga:timeOnSite" & startEndDates />
+		<cfset visitorLoyaltyUrl = dataExportURL & "dimensions=ga:visitorType&metrics=ga:visits,ga:organicSearches" & startEndDates />
+		<cfset visitsChartUrl = dataExportURL & "dimensions=ga:month,ga:year&metrics=ga:visits&sort=ga:year,ga:month" & startEndDates />
+		<cfset countryChartUrl = dataExportURL & "dimensions=ga:country&metrics=ga:visits&sort=-ga:visits" & startEndDates & "&max-results=5" />          
+		<cfset topPagesUrl = dataExportURL & "dimensions=ga:pageTitle&metrics=ga:pageviews&filters=ga:pageTitle!~Page%20Not%20Found&sort=-ga:pageviews" & startEndDates & "&max-results=25" />
+                  	
+		<!---check for session.getNewData to avoid calling/processing GA on page refresh.--->	
+		<cfif NOT isDefined("session.getNewData")>	
+		 	<!---calls GA API and gets data array returned--->
+		 	<cfset visitsSnapshotArray = parseData(visitsSnapshotUrl) />
+			<cfset visitorLoyaltyArray = parseData(visitorLoyaltyUrl) />
+			<cfset visitsChartArray = parseData(visitsChartUrl) />
+			<cfset countryChartArray = parseData(countryChartUrl) />
+			<cfset topPagesArray = parseData(topPagesUrl) />
+		        
+			<!---set session vars with data to prevent running calls to GA on page refresh--->
+		    <cflock scope="session" type="exclusive" timeout="5">
+		        <cfset session.getNewData = "no" />
+		        <cfset session.visitsSnapshotArray = visitsSnapshotArray />
+		        <cfset session.visitorLoyaltyArray = visitorLoyaltyArray />
+				<cfset session.visitsChartArray = visitsChartArray />
+		        <cfset session.countryChartArray = countryChartArray />
+		        <cfset session.topPagesArray = topPagesArray />
+			</cflock>                        
+		</cfif> 
+    </cffunction>
+    
     <cffunction name="callApi" access="public" returntype="any" hint="GA data">
         <cfargument name="gaUrl" type="string" required="yes">
         <cfargument name="authToken" type="string" required="yes">
@@ -119,22 +158,18 @@
          <cfset dataNodes = callApi(arguments.gaUrl,arguments.authToken) />
          
          <cfif StructKeyExists(dataNodes,"error") AND dataNodes.error.message EQ "Forbidden">
-         
          	<cflock scope="session" type="exclusive" timeout="5">
 				<cfset session.ga_accessToken = "Authorization Failed" />
 			</cflock>
             <cflocation url="index.cfm" addtoken="no"/>
-            
          <cfelse>
-
-         <cfloop from="1" to="#ArrayLen(dataNodes.rows)#" index="r">
-         	<cfset dataStruct = StructNew() />
-            <cfloop from="1" to="#ArrayLen(dataNodes.columnHeaders)#" index="h">
-            	<cfset "dataStruct.#Mid(dataNodes.columnHeaders[h]["name"],4,Len(dataNodes.columnHeaders[h]["name"]))#" = dataNodes.rows[r][h] />
+         	<cfloop from="1" to="#ArrayLen(dataNodes.rows)#" index="r">
+         		<cfset dataStruct = StructNew() />
+            		<cfloop from="1" to="#ArrayLen(dataNodes.columnHeaders)#" index="h">
+            		<cfset "dataStruct.#Mid(dataNodes.columnHeaders[h]["name"],4,Len(dataNodes.columnHeaders[h]["name"]))#" = dataNodes.rows[r][h] />
+            	</cfloop>
+					<cfset arrayAppend(returnArray,duplicate(dataStruct)) />
             </cfloop>
-				<cfset arrayAppend(returnArray,duplicate(dataStruct)) />
-            </cfloop>
-            
 		</cfif>
         
         <cfreturn returnArray />
