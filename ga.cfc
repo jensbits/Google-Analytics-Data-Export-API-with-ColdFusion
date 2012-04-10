@@ -3,9 +3,12 @@
  	<cffunction name="googleOauth2Login" access="public" hint="GA account authorization">
         <cfargument name="code" type="string" required="yes" default="">
         <cfargument name="gaOauthUrl" type="string" required="no" default="https://accounts.google.com/o/oauth2/token">
-    
-        <cfset jsonResponse = StructNew() />
-		<cfset var accessToken = "" />
+        <!---cfscript providers cleaner local var set--->
+        <cfscript>
+			var jsonResponse = StructNew();
+			var accessToken = "";
+			var expires_in = "";
+		</cfscript>
            
         <cfhttp url="#arguments.gaOauthUrl#" method="post">
        		<cfhttpparam name="code" type="formField" value="#arguments.code#">
@@ -55,7 +58,17 @@
     </cffunction>
     
     <cffunction name="init" access="public" hint="initialize vars">
-   		<!---dates for one full year of stats (default)--->
+   		<cfscript>
+			var dataExportURL = "";
+			var startEndDates = "";
+			var visitsSnapshotUrl = "";
+			var visitorLoyaltyUrl =  "";
+			var visitsChartUrl =  "";
+			var countryChartUrl = "";
+			var topPagesUrl = "";
+		</cfscript>
+        
+		<!---dates for one full year of stats (default)--->
 		<cfif (NOT isDefined("session.startdate")) AND (NOT isDefined("session.enddate"))>
 		    <cflock scope="session" type="exclusive" timeout="5">
 		        <cfset session.startdate = DateFormat(DateAdd("d",-366,Now()), "yyyy-mm-dd") />
@@ -74,21 +87,15 @@
                   	
 		<!---check for session.getNewData to avoid calling/processing GA on page refresh.--->	
 		<cfif NOT isDefined("session.getNewData")>	
-		 	<!---calls GA API and gets data array returned--->
-		 	<cfset visitsSnapshotArray = parseData(visitsSnapshotUrl) />
-			<cfset visitorLoyaltyArray = parseData(visitorLoyaltyUrl) />
-			<cfset visitsChartArray = parseData(visitsChartUrl) />
-			<cfset countryChartArray = parseData(countryChartUrl) />
-			<cfset topPagesArray = parseData(topPagesUrl) />
-		        
-			<!---set session vars with data to prevent running calls to GA on page refresh--->
+		 	<!---calls GA API and gets data array returned
+				set session vars with data to prevent running calls to GA on page refresh--->
 		    <cflock scope="session" type="exclusive" timeout="5">
 		        <cfset session.getNewData = "no" />
-		        <cfset session.visitsSnapshotArray = visitsSnapshotArray />
-		        <cfset session.visitorLoyaltyArray = visitorLoyaltyArray />
-				<cfset session.visitsChartArray = visitsChartArray />
-		        <cfset session.countryChartArray = countryChartArray />
-		        <cfset session.topPagesArray = topPagesArray />
+		        <cfset session.visitsSnapshotArray = parseData(visitsSnapshotUrl) />
+		        <cfset session.visitorLoyaltyArray = parseData(visitorLoyaltyUrl) />
+				<cfset session.visitsChartArray = parseData(visitsChartUrl) />
+		        <cfset session.countryChartArray = parseData(countryChartUrl) />
+		        <cfset session.topPagesArray = parseData(topPagesUrl) />
 			</cflock>                        
 		</cfif> 
     </cffunction>
@@ -96,10 +103,11 @@
     <cffunction name="callApi" access="public" returntype="any" hint="GA data">
         <cfargument name="gaUrl" type="string" required="yes">
         <cfargument name="authToken" type="string" required="yes">
-            
-        <cfset var authSubToken = 'Bearer ' & arguments.authToken />
-        <cfset var responseOutput = "" />
-           
+        <cfscript>    
+        	var authSubToken = 'Bearer ' & arguments.authToken;
+        	var responseOutput = "";
+        </cfscript>
+          
         <cfhttp url="#arguments.gaUrl#" method="get">
             <cfhttpparam name="Authorization" type="header" value="#authSubToken#">
         </cfhttp>
@@ -112,11 +120,13 @@
     <cffunction name="parseProfiles" access="public" hint="GA profiles as array of structures">
     	<cfargument name="gaUrl" type="string" required="no" default="https://www.googleapis.com/analytics/v3/management/accounts/~all/webproperties/~all/profiles">
         <cfargument name="authToken" type="string" required="no" default="#session.ga_accessToken#">
-    
-        <cfset var profilesResponse = callApi(arguments.gaUrl,arguments.authToken) />
-        <cfset var profilesArray = ArrayNew(1) />
-		<cfset var itemsArray =  ArrayNew(1) />
-        <cfset var itemStruct = StructNew() />
+    	<cfscript>
+        	var profilesResponse = callApi(arguments.gaUrl,arguments.authToken);
+        	var profilesArray = ArrayNew(1);
+			var itemsArray =  ArrayNew(1);
+        	var itemStruct = StructNew();
+        	var num = 0;
+        </cfscript>
         
          <!---check to see if they have any GA profiles, put any found in struct--->
         <cfif StructKeyExists(profilesResponse,"items")>
@@ -151,11 +161,13 @@
     <cffunction name="parseData" access="public" returntype="array" hint="GA data as array of structures">
         <cfargument name="gaUrl" type="string" required="yes">
         <cfargument name="authToken" type="string" required="no" default="#session.ga_accessToken#">
-        
-        <cfset var returnArray = ArrayNew(1) />
-        <cfset dataStruct = StructNew() />
-                  
-         <cfset dataNodes = callApi(arguments.gaUrl,arguments.authToken) />
+        <cfscript>
+        	var returnArray = ArrayNew(1);
+        	var dataStruct = StructNew();
+        	var dataNodes = callApi(arguments.gaUrl,arguments.authToken);
+        	var r = 0;
+			var h = 0;
+		</cfscript>
          
          <cfif StructKeyExists(dataNodes,"error") AND dataNodes.error.message EQ "Forbidden">
          	<cflock scope="session" type="exclusive" timeout="5">
