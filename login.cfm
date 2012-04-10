@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 <cfif (isDefined("URL.logout") and URL.logout EQ "true") OR (isDefined("session.ga_accessTokenExpiry") AND DateCompare(session.ga_accessTokenExpiry,Now()) LT 0)>
 	<cfinvoke component="ga" method="logout" />
 </cfif>
@@ -93,6 +94,8 @@
 </cfoutput>
 </body>
 =======
+=======
+>>>>>>> 9c705795cc283b02142a3aa7b4eb8a17ae2e47e8
 <cfif (isDefined("URL.logout") and URL.logout EQ "true") OR (isDefined("session.ga_accessTokenExpiry") AND DateCompare(session.ga_accessTokenExpiry,Now()) LT 0)>
 	<cfinvoke component="ga" method="logout" />
 </cfif>
@@ -186,5 +189,8 @@
 </div>
 </cfoutput>
 </body>
+<<<<<<< HEAD
+>>>>>>> 9c705795cc283b02142a3aa7b4eb8a17ae2e47e8
+=======
 >>>>>>> 9c705795cc283b02142a3aa7b4eb8a17ae2e47e8
 </html>

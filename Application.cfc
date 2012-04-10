@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 <cfcomponent output="false">
 
 <!--- Application settings --->
@@ -130,6 +131,8 @@
  
  
 =======
+=======
+>>>>>>> 9c705795cc283b02142a3aa7b4eb8a17ae2e47e8
 <cfcomponent output="false">
 
 <!--- Application settings --->
@@ -260,5 +263,8 @@
  
  
  
+<<<<<<< HEAD
+>>>>>>> 9c705795cc283b02142a3aa7b4eb8a17ae2e47e8
+=======
 >>>>>>> 9c705795cc283b02142a3aa7b4eb8a17ae2e47e8
 </cfcomponent>
