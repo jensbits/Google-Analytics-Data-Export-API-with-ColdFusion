@@ -81,25 +81,10 @@
      						 		client_secret = "YOUR-CLIENT-SECRET",
      						 		redirect_uri = "YOUR-REDIRECT-URI",
      						 		state = "optional"} />
+     						 		
+    <cfinclude template="#ARGUMENTS.TargetPage#" />
+    
 	<cfreturn true />
-</cffunction>
- 
-<cffunction
-	name="OnRequest"
-	access="public"
-	returntype="void"
-	output="true"
-	hint="Fires after pre page processing is complete.">
- 
-	<cfargument
-		name="TargetPage"
-		type="string"
-		required="true"
-		/>
- 
-	<cfinclude template="#ARGUMENTS.TargetPage#" />
- 
-	<cfreturn />
 </cffunction>
   
 <cffunction
