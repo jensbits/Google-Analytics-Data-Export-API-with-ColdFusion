@@ -26,6 +26,7 @@
 	hint="Fires when the session is first created.">
  
  	<!---set cfid/cftoken as non-persistent cookies so session ends on browser close 
+ 	<!---not needed for j2ee --->
         <cfif not IsDefined("Cookie.CFID")>
             <cflock scope="session" type="readonly" timeout="5">
                 <cfcookie name="CFID" value="#session.CFID#">
@@ -33,7 +34,7 @@
                  <cfset session.SessionStartTime = Now() />
             </cflock>
         </cfif>
-	--->
+	
 	<cfreturn />
 </cffunction>
  
@@ -49,16 +50,6 @@
 		type="string"
 		required="true"
 		/>
- 
- 	<!---set cfid/cftoken as non-persistent cookies so session ends on browser close  --->
- 	<!---not needed for j2ee --->
-        <cfif not IsDefined("Cookie.CFID")>
-            <cflock scope="session" type="readonly" timeout="5">
-                <cfcookie name="CFID" value="#session.CFID#">
-                <cfcookie name="CFTOKEN" value="#session.CFTOKEN#">
-                 <cfset session.SessionStartTime = Now() />
-            </cflock>
-        </cfif>
         
     <cfset request.oauthSettings = {scope = "https://www.googleapis.com/auth/analytics.readonly",
      								client_id = "YOUR-CLIENT-ID.apps.googleusercontent.com",
